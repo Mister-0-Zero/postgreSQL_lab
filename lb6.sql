@@ -13,21 +13,21 @@ where student_id = 852957
 group by student_id;
 
 
-CREATE OR REPLACE FUNCTION get_average_mark(student_id_ INT)
-RETURNS NUMERIC 
-LANGUAGE plpgsql
-AS 
+create or replace function get_average_mark(student_id_ int)
+returns numeric
+language plpgsql
+as
 $$
-DECLARE
-    avg_mark NUMERIC;
-BEGIN
-    SELECT round(AVG(mark),2)
-    INTO avg_mark
-    FROM field_comprehensions
-    WHERE student_id = student_id_;
+declare
+    avg_mark numeric;
+begin
+    select round(avg(mark),2)
+    into avg_mark
+    from field_comprehensions
+    where student_id = student_id_;
 
-    RETURN avg_mark;
-END;
+    return avg_mark;
+end;
 $$;
 
 
@@ -57,7 +57,7 @@ group by student_id;
 -- Вар 4: 4, 14, 24, 34, 44, 54, 64
 
 /*
-Напишите скрипт, который возвращает фамилию, имя студентов со счастливым
+4. Напишите скрипт, который возвращает фамилию, имя студентов со счастливым
 студенческим билетом (сумма первых трех цифр номера билета совпадает с
 суммой последних трех)
 */
@@ -210,7 +210,7 @@ returns numeric
 language sql
 as
 $$
-	select round(avg(p.salary::numeric), -1) as avg_salary from professors p
+	select round(avg(p.salary::numeric)) as avg_salary from professors p
 	join employments e 
 	on p.professor_id = e.professor_id
 	where e.structural_unit_id = structural_unit_id_
