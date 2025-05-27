@@ -50,13 +50,13 @@ execute procedure set_grave_occupied();
 Для использования проекта выполните следующие действия:
 
 1. Запустите файл create_DB.sql
-2. Запустите файл create_tables_and_trigger.sql
-3. Запустите файл fill_DB.sql
+2. Запустите файл create_tables_and_triggers.sql
+3. Добавьте индексы в проект запустив: add_index.sql
+4. Запустите файл fill_DB.sql
+5. Далее можно добавить процедуры запустив procedure.sql
 С этого момента база данных создана и заполнена, примеры запросов можно посмотреть в файле:
 query_example.sql
 
-Добавление индексов в БД:
-add_index.sql
 
 # Автор:
 
