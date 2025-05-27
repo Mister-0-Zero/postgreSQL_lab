@@ -88,3 +88,21 @@ after insert on deceased
 for each row
 when (new.grave_id is not null)
 execute procedure set_grave_occupied();
+
+-- Триггер, что при добавлении погибшего мы добавляем строку в таблицу услуг с типом "захоронение"
+
+CREATE OR REPLACE FUNCTION add_burial_order()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Добавляем заказ
+INSERT INTO orders (service_id, grave_id, order_date, status)
+VALUES (1, NEW.grave_id, NEW.date_dead, 'выполнено');
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_add_burial_order
+AFTER INSERT ON deceased
+FOR EACH ROW
+EXECUTE FUNCTION add_burial_order();

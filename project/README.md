@@ -51,7 +51,13 @@ execute procedure set_grave_occupied();
 
 1. Запустите файл create_DB.sql
 2. Запустите файл create_tables_and_trigger.sql
-3. Запустите файл fill_BD.sql
+3. Запустите файл fill_DB.sql
+С этого момента база данных создана и заполнена, примеры запросов можно посмотреть в файле:
+query_example.sql
+
+Добавление индексов в БД:
+add_index.sql
+
 # Автор:
 
 - Лядков Алексей
