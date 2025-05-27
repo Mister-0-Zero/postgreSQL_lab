@@ -45,6 +45,26 @@ for each row
 when (new.grave_id is not null)
 execute procedure set_grave_occupied();
 ```
+Также реализован триггер `add_burial_order`, который автоматически добавляет строку в таблицу `orders` при новом погибшем, выполняется услуга `Организация похорон`
+
+```sql
+CREATE OR REPLACE FUNCTION add_burial_order()
+RETURNS TRIGGER AS $$
+BEGIN
+INSERT INTO orders (service_id, grave_id, order_date, status)
+VALUES (1, NEW.grave_id, NEW.date_dead, 'выполнено');
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_add_burial_order
+AFTER INSERT ON deceased
+FOR EACH ROW
+EXECUTE FUNCTION add_burial_order();
+```
+Также созданы индексы (файл add_index.sql) и процедуры (procedure.sql)
+
 # Использование:
 
 Для использования проекта выполните следующие действия:
