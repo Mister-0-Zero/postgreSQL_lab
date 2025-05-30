@@ -10,7 +10,21 @@ def main(page: ft.Page):
     page.bgcolor = "#1a001f"
     page.padding = 0
     page.font_family = "Fira Code"
-    page.window.maximized = True
+    page.window.full_screen = True
+
+    def toggle_fullscreen(e=None):
+        if page.window.full_screen:
+            page.window.full_screen = False
+        else:
+            page.window.full_screen = True
+        page.update()
+    
+    # Обработка Esc и двойного клика по интерфейсу
+    def on_keyboard(e: ft.KeyboardEvent):
+        if e.key == "Escape":
+            toggle_fullscreen()
+
+    page.on_keyboard_event = on_keyboard
 
     TEXT_STYLE = ft.TextStyle(size=16, weight=ft.FontWeight.BOLD, color="white")
 
@@ -47,7 +61,7 @@ def main(page: ft.Page):
                 [
                     ft.AppBar(
                         title=ft.Text("ERD Diagram"),
-                        bgcolor="#550055",
+                        bgcolor="#660066",
                         leading=ft.IconButton(
                             icon="arrow_back",
                             on_click=lambda _: page.go("/"),
@@ -82,7 +96,7 @@ def main(page: ft.Page):
             [
                 ft.AppBar(
                     title=ft.Text("Документация"),
-                    bgcolor="#550055",
+                    bgcolor="#660066",
                     leading=ft.IconButton(
                         icon="arrow_back",
                         on_click=lambda _: page.go("/"),
@@ -105,57 +119,42 @@ def main(page: ft.Page):
         )
 
     def create_examples_view():
-        try:
-            with open("examples.md", "r", encoding="utf-8") as f:
-                examples_content = f.read()
-            
-            return ft.View(
-                "/examples",
-                [
-                    ft.AppBar(
-                        title=ft.Text("Примеры SQL запросов"),
-                        bgcolor="#550055",
-                        leading=ft.IconButton(
-                            icon="arrow_back",
-                            on_click=lambda _: page.go("/"),
-                        )
-                    ),
-                    ft.Container(
-                        content=ft.Column(
-                            [
+        examples_content = load_examples()
+        
+        return ft.View(
+            "/examples",
+            [
+                ft.AppBar(
+                    title=ft.Text("Примеры SQL запросов"),
+                    bgcolor="#660066",
+                    leading=ft.IconButton(
+                        icon="arrow_back",
+                        on_click=lambda _: page.go("/"),
+                    )
+                ),
+                ft.Stack(
+                    [
+                        ft.Container(
+                            content=ft.Column([
                                 ft.Markdown(
                                     examples_content,
                                     selectable=True,
                                     extension_set="gitHubWeb",
                                     code_theme="atom-one-dark",
                                     on_tap_link=lambda e: page.launch_url(e.data),
+                                    expand=True,
                                 )
-                            ],
+                            ], expand=True, scroll="auto"),
                             expand=True,
-                            scroll="auto"
-                        ),
-                        expand=True,
-                        padding=20,
-                    ),
-                    ft.FloatingActionButton(
-                        icon="content_copy",  # Строковый идентификатор иконки
-                        text="Копировать выделенный текст",
-                        on_click=lambda e: copy_selected_text(),
-                        bgcolor="#800080",
-                        bottom=20,
-                        right=20,
-                    )
-                ],
-                scroll="auto"
-            )
-        except Exception as ex:
-            return ft.View(
-                "/examples",
-                [
-                    ft.AppBar(title=ft.Text("Ошибка")),
-                    ft.Text(f"Не удалось загрузить примеры: {str(ex)}")
-                ]
-            )
+                            bgcolor="#110011",
+                            padding=20
+                        )
+                    ],
+                    expand=True
+                )
+            ],
+            scroll="auto"
+        )
 
     def show_examples_view(e=None):
         page.go("/examples")
@@ -177,6 +176,15 @@ def main(page: ft.Page):
                 return f.read()
         except Exception as e:
             return f"Не удалось загрузить документацию:\n\n{e}"
+
+    def load_examples():
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            examples_path = os.path.join(base_dir, "examples.md")
+            with open(examples_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            return f"Не удалось загрузить примеры запросов:\n\n{e}"
 
     # Кнопки действий
     
@@ -256,7 +264,7 @@ def main(page: ft.Page):
         "/",
         appbar = ft.AppBar(
             title=ft.Text("SQL GUI Client", style=ft.TextStyle(size=20, weight=ft.FontWeight.BOLD, color="white")),
-            bgcolor="#330033",
+            bgcolor="#660066",
             actions=[
                 ft.TextButton(content=ft.Text("ERD", weight="bold", color="white"), on_click=show_erd_view),
                 ft.TextButton(content=ft.Text("Примеры кода", weight="bold", color="white"), on_click=show_examples_view),
@@ -273,13 +281,14 @@ def main(page: ft.Page):
                         bgcolor="#220022",
                         border_radius=10,
                     ),
-                    ft.Container(
-                        output_column,
-                        padding=20,
-                        expand=True,
-                        bgcolor="#330033",
-                        border_radius=10,
-                    ),
+                   ft.Container(
+                    output_column,
+                    padding=20,
+                    expand=True,
+                    bgcolor="#330033",
+                    border_radius=10,
+                    border=ft.border.all(3, "black"),  
+                )
                 ],
                 expand=True,
                 spacing=10,
