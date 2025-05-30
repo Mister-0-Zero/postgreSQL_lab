@@ -1,15 +1,14 @@
 create table plots(
     id serial primary key,
-    name text not null check (name in ('Центральное', 'Северное')),
-    direction text check (direction in ('юг', 'юго-восток', 'восток', 'северо-восток', 'север', 'северо-запад', 'запад', 'юго-запад'))
+    name text not null,
+    latitude numeric check (latitude between -90 and 90) not null,
+    longitude numeric check (longitude between -180 and 180) not null
 );
 
 create table graves(
     id serial primary key,
     plot_id integer references plots(id),
     is_occupied boolean default false,
-	latitude numeric check (latitude between -90 and 90),
-    longitude numeric check (longitude between -180 and 180),
     description text
 );
 
@@ -20,6 +19,12 @@ create table funeralagencies(
     address text
 );
 
+create table services(
+    id serial primary key,
+    funeralagency_id integer references funeralagencies(id),
+    name text not null,
+    price numeric not null check(price >= 0)
+);
 
 create table deceased (
     id serial primary key,
@@ -28,26 +33,9 @@ create table deceased (
     date_dead date check (date_dead IS NULL OR date_birthday is null or date_dead >= date_birthday),
     cause_of_death text,
     grave_id integer unique references graves(id),
-    funeralagency_id integer references funeralagencies(id)
+    funeralagency_id integer references funeralagencies(id),
+    service_id integer REFERENCES services(id)
 );
-
-
-create table relatives(
-    id serial primary key,
-    full_name text not null,
-    phone text check(phone ~ '^\+7[0-9]{10}$'),
-    relationship text,
-    deceased_id integer references deceased(id)
-);
-
-
-create table services(
-    id serial primary key,
-    name text not null,
-    price numeric not null check(price > 0),
-    type text
-);
-
 
 create table orders(
     id serial primary key,
@@ -56,17 +44,6 @@ create table orders(
     order_date date default current_date,
     status text not null
 );
-
--- Доп таблица с двумя важными координатами
-create table variables(
-    name varchar(40) not null,
-    latitude numeric check (latitude between -90 and 90),
-    longitude numeric check (longitude between -180 and 180)
-);
-
-insert into variables values 
-  ('Центральное', 55.985724, 37.260656), -- Кординаты пераого кладбища
-  ('Северное', 55.954110, 37.216786); -- Координаты второго кладбища
 
 -- Создадим триггер, который будет изменять статус занятой могилы, при добавлении нового умершего
 --(со свободной на занятую):
@@ -94,13 +71,13 @@ execute procedure set_grave_occupied();
 CREATE OR REPLACE FUNCTION add_burial_order()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Добавляем заказ
-INSERT INTO orders (service_id, grave_id, order_date, status)
-VALUES (1, NEW.grave_id, NEW.date_dead, 'выполнено');
+  INSERT INTO orders (service_id, grave_id, order_date, status)
+  VALUES (NEW.burial_service_id, NEW.grave_id, NEW.date_dead, 'выполнено');
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE TRIGGER trg_add_burial_order
 AFTER INSERT ON deceased

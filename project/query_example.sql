@@ -1,166 +1,129 @@
--- 1. Посмотрим какие таблицы у нас есть и сколько в них строк
+-- 1. посмотрим какие таблицы у нас есть и сколько в них строк
+select 'deceased' as table_name, count(*) as row_count from deceased
+union all
+select 'funeralagencies', count(*) from funeralagencies
+union all
+select 'plots', count(*) from plots
+union all
+select 'graves', count(*) from graves
+union all
+select 'services', count(*) from services
+union all
+select 'orders', count(*) from orders;
 
-SELECT 'deceased' AS table_name, COUNT(*) AS row_count FROM deceased
-UNION ALL
-SELECT 'relatives', COUNT(*) FROM relatives
-UNION ALL
-SELECT 'funeralagencies', COUNT(*) FROM funeralagencies
-UNION ALL
-SELECT 'plots', COUNT(*) FROM plots
-UNION ALL
-SELECT 'graves', COUNT(*) FROM graves
-UNION ALL
-SELECT 'services', COUNT(*) FROM services
-UNION ALL
-SELECT 'orders', COUNT(*) FROM orders;
+-- 2. количество различных услуг у каждого агенства
+select f.name, count(*) as count_services 
+from services s
+join funeralagencies f on f.id = s.funeralagency_id 
+group by f.name;
 
--- 2. Посмотрим сколько могил в каком кладбище
+-- 3. какой был возраст у погибших
+select full_name, extract(year from age(date_dead, date_birthday)) as age_at_death 
+from deceased;
 
-create temp table temp_table(
-	name_cementery text,
-	count_graves integer
-);
+-- 4. самые дорогие услуги у каждого агенства
+select f.name, max(price) 
+from services s
+join funeralagencies f on f.id = s.funeralagency_id
+group by f.id, f.name;
 
-insert into temp_table values
-('Всего могил', (select count(*) from graves)),
-('Центральное', (select count(*) from graves where 55.98 = round(latitude, 2))),
-('Северное', (select count(*) from graves where 55.98 <> round(latitude, 2)));
+-- 5. количество умерших по годам
+select extract(year from date_dead) as death_year, count(*) as deceased_count
+from deceased
+group by death_year
+order by death_year;
 
-select * from temp_table;
+-- 6. средняя стоимость услуг по агенству
+select f.name, round(avg(price), 2) as avg_price 
+from services s
+join funeralagencies f on f.id = s.funeralagency_id 
+group by s.funeralagency_id, f.name;
 
--- 3. Найдем топ 5 услуг
+-- 7. умершие в возрасте 75 и более
+select *
+from deceased
+where extract(year from age(date_dead, date_birthday)) >= 75;
 
-SELECT s.name, COUNT(*) AS order_count
-FROM orders o
-JOIN services s ON o.service_id = s.id
-GROUP BY s.name
-ORDER BY order_count DESC
-LIMIT 5;
+-- 8. заказы за последние 10 лет
+select *
+from orders
+where order_date >= current_date - interval '3650 days';
 
--- 4. Найдем всех родственников определенного типа
+-- 9. средний возраст погибших
+select round(avg(extract(year from age(date_dead, date_birthday)))) as avg_age
+from deceased
+where date_birthday is not null and date_dead is not null;
 
-SELECT r.full_name, r.phone, d.full_name AS deceased
-FROM relatives r
-JOIN deceased d ON r.deceased_id = d.id
-WHERE r.relationship = 'мать';
+-- 10. количество могил на каждом участке
+select plot_id, count(*) as grave_count
+from graves
+group by plot_id
+order by grave_count desc;
 
--- 5. Посмотрим сколько погибших захоронило какое агенств
+-- 11. участки с более чем 500 могилами
+select plot_id, count(*)
+from graves
+group by plot_id
+having count(*) > 500;
 
-select count(*) as count_orders, f.name from deceased d 
-join funeralagencies f on d.funeralagency_id = f.id 
-group by d.funeralagency_id, f.name 
-order by count_orders;
+-- 12. вывести умерших, у которых нет даты рождения
+select *
+from deceased
+where date_birthday is null;
 
--- 6 Количество умерших по годам
+-- 13. услуги по кремации, отсортированные по цене
+select *
+from services
+where name ilike '%кремация%'
+order by price desc;
 
-SELECT EXTRACT(YEAR FROM date_death) AS death_year, COUNT(*) AS deceased_count
-FROM deceased
-GROUP BY death_year
-ORDER BY death_year;
+-- 14. все заявки с null услугой (не выбрано при добавлении)
+select *
+from orders
+where service_id is null;
 
--- 7 Средняя стоимость услуг по типу
+-- 15. умершие, чьи данные были добавлены без агентства
+select *
+from deceased
+where funeralagency_id is null;
 
-SELECT type, ROUND(AVG(price), 2) AS avg_price
-FROM services
-GROUP BY type;
+-- 16. представление: усреднённая стоимость услуг по категориям услуг (базовый, премиум и т.д.)
+create or replace view avg_service_prices_by_category as
+select 
+  case
+    when name ilike '%баз%' then 'базовый'
+    when name ilike '%стандарт%' then 'стандартный'
+    when name ilike '%премиум%' then 'премиум'
+    when name ilike '%элит%' then 'элитный'
+    when name ilike '%социальный%' then 'социальный'
+    else 'прочее'
+  end as category,
+  round(avg(price)) as avg_price
+from services
+group by category;
 
--- 8 родственники у которых более одного умершего
+select * from avg_service_prices_by_category;
 
-SELECT r.full_name, COUNT(*) AS deceased_count
-FROM relatives r
-GROUP BY r.full_name
-HAVING COUNT(*) > 1
-ORDER BY deceased_count DESC;
+-- 17. количество услуг по статусу
+select status, count(*) as count
+from orders
+group by status;
 
--- 9 количество услуг на могилу
+-- 18. умершие по неизвестной причине
+select * 
+from deceased
+where cause_of_death is null;
 
-SELECT g.id AS grave_id, COUNT(o.id) AS order_count
-FROM graves g
-LEFT JOIN orders o ON g.id = o.grave_id
-where g.id = 20427
-GROUP BY g.id;
+-- 19. общее количество услуг и заявок по каждому агентству
+select f.name,
+       count(distinct s.id) as service_count,
+       count(o.id) as order_count
+from funeralagencies f
+left join services s on f.id = s.funeralagency_id
+left join orders o on s.id = o.service_id
+group by f.name;
 
--- 10 Количество услуг на одного из родственников
-
-SELECT r.full_name, COUNT(o.id) AS orders_count
-FROM relatives r
-JOIN deceased d ON r.deceased_id = d.id
-JOIN graves g ON d.grave_id = g.id
-JOIN orders o ON o.grave_id = g.id
-GROUP BY r.full_name
-ORDER BY orders_count DESC;
-
--- 11 Топ 20 самых дорогих заохоронений
-
-select sum(s.price) as total_price, d.full_name
-from deceased d 
-join graves g on d.grave_id = g.id
-join orders r on r.grave_id = g.id
-join services s on s.id = r.service_id
-group by g.id, d.full_name
-order by total_price desc
-limit 20;
-
--- 12 количество услуг по типу
-
-SELECT s.type, COUNT(*) AS order_count
-FROM orders o
-JOIN services s ON o.service_id = s.id
-GROUP BY s.type;
-
--- 13 Погибшие для которых заказывали установку памятника
-
-SELECT DISTINCT d.*
-FROM deceased d
-JOIN orders o ON o.grave_id = d.grave_id
-JOIN services s ON s.id = o.service_id
-WHERE s.name = 'Установка памятника';
-
--- 14 Общая выручка по услуге
-
-SELECT s.name, SUM(s.price) AS total_revenue
-FROM orders o
-JOIN services s ON s.id = o.service_id
-GROUP BY s.name
-ORDER BY total_revenue DESC;
-
--- 15 Умершие в возрасте 95 и более
-
-SELECT *
-FROM deceased
-WHERE EXTRACT(YEAR FROM age(date_dead, date_birthday)) >= 95;
-
--- 16 Количество погибших на каждом участке
-
-SELECT plot_id, COUNT(*) AS graves_count
-FROM graves
-GROUP BY plot_id
-ORDER BY graves_count DESC;
-
--- 17 Заказы за последние 30 дней
-
-SELECT *
-FROM orders
-WHERE order_date >= current_date - INTERVAL '30 days';
-
--- 18 Погибшие без родственников
-
-SELECT d.*
-FROM deceased d
-LEFT JOIN relatives r ON r.deceased_id = d.id
-WHERE r.id IS NULL;
-
--- 19 Средний возраст погибших
-
-SELECT ROUND(AVG(EXTRACT(YEAR FROM age(date_dead, date_birthday)))) AS avg_age
-FROM deceased
-WHERE date_birthday IS NOT NULL AND date_dead IS NOT NULL;
-
---20 Количество услуг на могилу (у которых более одной услуги)
-
-SELECT grave_id, COUNT(*) AS orders_count
-FROM orders
-GROUP BY grave_id
-HAVING COUNT(*) > 1
-order by orders_count desc;
-
+-- 20. суммарная стоимость оказанных услуг (если назначена)
+select sum(s.price) as total_earned
+from orders o
+join services s on o.service_id = s.id;
