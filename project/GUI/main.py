@@ -35,80 +35,98 @@ def main(page: ft.Page):
         selectable=True,
         expand=True,
     )
-    
-    def show_erd_view(e):
+    def create_erd_view():
         try:
-            # Полный путь к изображению
             erd_path = os.path.join(os.path.dirname(__file__), "ERD.png")
             
-            # Проверяем существование файла
             if not os.path.exists(erd_path):
                 raise FileNotFoundError(f"Файл ERD.png не найден по пути: {erd_path}")
             
-            # Создаем View для ERD
-            erd_view = ft.View(
+            return ft.View(
                 "/erd",
                 [
                     ft.AppBar(
-                        title=ft.Text("ERD Diagram"), 
+                        title=ft.Text("ERD Diagram"),
                         bgcolor="#550055",
                         leading=ft.IconButton(
                             icon="arrow_back",
-                            on_click=lambda _: page.go("/"),  # Возврат на главный экран
+                            on_click=lambda _: page.go("/"),
                         )
                     ),
                     ft.Container(
-                        content=ft.Column(
-                            [
-                                ft.Image(
-                                    src=erd_path,
-                                    fit="contain"
-                                ),
-                                ft.Text("Диаграмма ERD базы данных", size=16),
-                            ],
-                            horizontal_alignment="center",
+                        content=ft.Image(
+                            src=erd_path,
+                            fit="contain"
                         ),
                         expand=True,
                         padding=20,
                         alignment=ft.alignment.center,
                     )
                 ],
-                scroll="auto",
-                padding=0,
+                scroll="auto"
             )
-            
-            page.views.clear()
-            page.views.append(erd_view)
-            page.update()
             
         except Exception as ex:
-            error_msg = f"Ошибка при загрузке ERD: {str(ex)}"
-            print(error_msg)
-            page.snack_bar = ft.SnackBar(
-                ft.Text(error_msg),
-                bgcolor="#FF0000",
+            return ft.View(
+                "/erd",
+                [
+                    ft.AppBar(title=ft.Text("Ошибка")),
+                    ft.Text(f"Не удалось загрузить ERD: {str(ex)}")
+                ]
             )
-            page.snack_bar.open = True
-            page.update()
 
-    def show_examples_view(e):
+    def create_doc_view():
+        readme_text = load_readme()
+        return ft.View(
+            "/docs",
+            [
+                ft.AppBar(
+                    title=ft.Text("Документация"),
+                    bgcolor="#550055",
+                    leading=ft.IconButton(
+                        icon="arrow_back",
+                        on_click=lambda _: page.go("/"),
+                    )
+                ),
+                ft.Container(
+                    content=ft.Markdown(
+                        readme_text,
+                        selectable=True,
+                        extension_set="gitHubWeb",
+                        code_theme="atom-one-dark",
+                        on_tap_link=lambda e: page.launch_url(e.data),
+                    ),
+                    expand=True,
+                    bgcolor="#110011",
+                    padding=20
+                )
+            ],
+            scroll="auto"
+        )
+
+    def create_examples_view():
         try:
-            # Загружаем примеры из файла
             with open("examples.md", "r", encoding="utf-8") as f:
                 examples_content = f.read()
             
-            # Создаем View для примеров
-            examples_view = ft.View(
+            return ft.View(
                 "/examples",
                 [
-                    ft.AppBar(title=ft.Text("Примеры SQL запросов"), bgcolor="#550055"),
+                    ft.AppBar(
+                        title=ft.Text("Примеры SQL запросов"),
+                        bgcolor="#550055",
+                        leading=ft.IconButton(
+                            icon="arrow_back",
+                            on_click=lambda _: page.go("/"),
+                        )
+                    ),
                     ft.Container(
                         content=ft.Column(
                             [
                                 ft.Markdown(
                                     examples_content,
                                     selectable=True,
-                                    extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                                    extension_set="gitHubWeb",
                                     code_theme="atom-one-dark",
                                     on_tap_link=lambda e: page.launch_url(e.data),
                                 )
@@ -120,65 +138,36 @@ def main(page: ft.Page):
                         padding=20,
                     ),
                     ft.FloatingActionButton(
-                        icon=ft.icons.COPY,
+                        icon="content_copy",  # Строковый идентификатор иконки
                         text="Копировать выделенный текст",
                         on_click=lambda e: copy_selected_text(),
                         bgcolor="#800080",
+                        bottom=20,
+                        right=20,
                     )
                 ],
                 scroll="auto"
             )
-            page.views.append(examples_view)
-            page.update()
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Ошибка при загрузке примеров: {ex}"))
-            page.snack_bar.open = True
-            page.update()
+            return ft.View(
+                "/examples",
+                [
+                    ft.AppBar(title=ft.Text("Ошибка")),
+                    ft.Text(f"Не удалось загрузить примеры: {str(ex)}")
+                ]
+            )
 
-    def copy_selected_text():
-        # Эта функция будет копировать выделенный текст в Markdown-виджете
-        # Реализация зависит от того, как Flet обрабатывает выделение текста
-        pass
+    def show_examples_view(e=None):
+        page.go("/examples")
 
     def show_query_view(e=None):
-        page.views.clear()
-        page.views.append(query_view)
-        page.update()
+        page.go("/")
+
+    def show_erd_view(e=None):
+        page.go("/erd")
 
     def show_doc_view(e=None):
-        readme_text = load_readme()
-        doc_page = ft.View(
-            "/docs",
-            [
-                ft.AppBar(
-                    title=ft.Text("Документация"), 
-                    bgcolor="#550055",
-                    leading=ft.IconButton(
-                        icon="arrow_back",
-                        on_click=lambda _: page.go("/"),  # Возврат на главный экран
-                    )
-                ),
-                ft.Container(
-                    content=ft.Column([
-                        ft.Markdown(
-                            readme_text,
-                            selectable=True,
-                            extension_set="gitHubWeb",
-                            code_theme="atom-one-dark",
-                            on_tap_link=lambda e: page.launch_url(e.data),
-                            expand=True,
-                        )
-                    ], expand=True, scroll="auto"),
-                    expand=True,
-                    bgcolor="#110011",
-                    padding=20
-                )
-            ],
-            scroll="auto"
-        )
-        page.views.clear()
-        page.views.append(doc_page)
-        page.update()
+        page.go("/docs")
 
     def load_readme():
         try:
@@ -269,7 +258,6 @@ def main(page: ft.Page):
             title=ft.Text("SQL GUI Client", style=ft.TextStyle(size=20, weight=ft.FontWeight.BOLD, color="white")),
             bgcolor="#330033",
             actions=[
-                ft.TextButton(content=ft.Text("Запросчик", weight="bold", color="white"), on_click=show_query_view),
                 ft.TextButton(content=ft.Text("ERD", weight="bold", color="white"), on_click=show_erd_view),
                 ft.TextButton(content=ft.Text("Примеры кода", weight="bold", color="white"), on_click=show_examples_view),
                 ft.TextButton(content=ft.Text("Документация", weight="bold", color="white"), on_click=show_doc_view),
@@ -301,18 +289,23 @@ def main(page: ft.Page):
         spacing=0,
     )
 
-    def route_change(e):
-        if page.route == "/":
-            show_query_view()
+    def route_change(route):
+        page.views.clear()
+        
+        if page.route == "/" or page.route == "":
+            page.views.append(query_view)
         elif page.route == "/erd":
-            show_erd_view(None)
+            page.views.append(create_erd_view())
         elif page.route == "/docs":
-            show_doc_view(None)
+            page.views.append(create_doc_view())
+        elif page.route == "/examples":
+            page.views.append(create_examples_view())
+        
+        page.update()
 
     page.on_route_change = route_change
 
-    page.views.append(query_view)
-    page.update()
+    page.go("/")
 
     error_details = traceback.format_exc()
     print(error_details)
