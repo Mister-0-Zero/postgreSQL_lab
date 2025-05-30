@@ -166,14 +166,17 @@ query_example.sql
 
 ## 📋 Структура таблиц
 
-| Таблица             | Поля                                                                                                                   |
-|--------------------------------------------------------------------------------------------------------------------------------------------- |
-| **plots**           | `id (PK)`, `name`, `latitude`, `longitude`                                                                             |
-| **graves**          | `id (PK)`, `plot_id (FK)`, `is_occupied`, `description`                                                                |
-| **funeralagencies** | `id (PK)`, `name`, `phone`, `address`                                                                                  |
-| **deceased**        | `id (PK)`, `full_name`, `date_birthday`,`date_dead`,`cause_of_death`,`grave_id (FK, UNIQUE)`, `funeralagency_id(FK)`|                    | `service_id (FK)`                                                                                                      |
-| **services**        | `id (PK)`, `funeralagency_id (FK)` `name`, `price`                                                                     |
-| **orders**          | `id (PK)`, `service_id (FK)`, `grave_id (FK)`, `order_date`,`status`                                                   |
+Хорошо, вот исправленная таблица с сохранением исходной структуры:
+
+| Таблица             | Поля                                                                                                                               |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| **plots**           | `id (PK)`, `name`, `latitude`, `longitude`                                                                                     |
+| **graves**          | `id (PK)`, `plot_id (FK)`, `is_occupied`, `description`                                                                        |
+| **funeralagencies** | `id (PK)`, `name`, `phone`, `address`                                                                                           |
+| **deceased**        | `id (PK)`, `full_name`, `date_birthday`, `date_dead`, `cause_of_death`, `grave_id (FK, UNIQUE)`, `funeralagency_id (FK)`            |
+| **services**        | `id (PK)`, `funeralagency_id (FK)`, `name`, `price`                                                                               |
+| **orders**          | `id (PK)`, `service_id (FK)`, `grave_id (FK)`, `order_date`, `status`                                                              |
+
 
 ## Ограничения и валидация
 
