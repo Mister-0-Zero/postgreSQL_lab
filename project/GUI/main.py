@@ -29,19 +29,116 @@ def main(page: ft.Page):
     )
 
     # Result display field
-    result_output = ft.TextField(
+    result_output = ft.Text(
         value="",
-        read_only=True,
-        multiline=True,
-        border_color="#800080",
-        text_style=TEXT_STYLE,
-        border_radius=10,
-        filled=True,
-        fill_color="#2a0033",
-        cursor_color="white",
-        cursor_width=2,
-        expand=True
+        style=TEXT_STYLE,
+        selectable=True,
+        expand=True,
     )
+    
+    def show_erd_view(e):
+        try:
+            # Полный путь к изображению
+            erd_path = os.path.join(os.path.dirname(__file__), "ERD.png")
+            
+            # Проверяем существование файла
+            if not os.path.exists(erd_path):
+                raise FileNotFoundError(f"Файл ERD.png не найден по пути: {erd_path}")
+            
+            # Создаем View для ERD
+            erd_view = ft.View(
+                "/erd",
+                [
+                    ft.AppBar(
+                        title=ft.Text("ERD Diagram"), 
+                        bgcolor="#550055",
+                        leading=ft.IconButton(
+                            icon="arrow_back",
+                            on_click=lambda _: page.go("/"),  # Возврат на главный экран
+                        )
+                    ),
+                    ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Image(
+                                    src=erd_path,
+                                    fit="contain"
+                                ),
+                                ft.Text("Диаграмма ERD базы данных", size=16),
+                            ],
+                            horizontal_alignment="center",
+                        ),
+                        expand=True,
+                        padding=20,
+                        alignment=ft.alignment.center,
+                    )
+                ],
+                scroll="auto",
+                padding=0,
+            )
+            
+            page.views.clear()
+            page.views.append(erd_view)
+            page.update()
+            
+        except Exception as ex:
+            error_msg = f"Ошибка при загрузке ERD: {str(ex)}"
+            print(error_msg)
+            page.snack_bar = ft.SnackBar(
+                ft.Text(error_msg),
+                bgcolor="#FF0000",
+            )
+            page.snack_bar.open = True
+            page.update()
+
+    def show_examples_view(e):
+        try:
+            # Загружаем примеры из файла
+            with open("examples.md", "r", encoding="utf-8") as f:
+                examples_content = f.read()
+            
+            # Создаем View для примеров
+            examples_view = ft.View(
+                "/examples",
+                [
+                    ft.AppBar(title=ft.Text("Примеры SQL запросов"), bgcolor="#550055"),
+                    ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Markdown(
+                                    examples_content,
+                                    selectable=True,
+                                    extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                                    code_theme="atom-one-dark",
+                                    on_tap_link=lambda e: page.launch_url(e.data),
+                                )
+                            ],
+                            expand=True,
+                            scroll="auto"
+                        ),
+                        expand=True,
+                        padding=20,
+                    ),
+                    ft.FloatingActionButton(
+                        icon=ft.icons.COPY,
+                        text="Копировать выделенный текст",
+                        on_click=lambda e: copy_selected_text(),
+                        bgcolor="#800080",
+                    )
+                ],
+                scroll="auto"
+            )
+            page.views.append(examples_view)
+            page.update()
+        except Exception as ex:
+            page.snack_bar = ft.SnackBar(ft.Text(f"Ошибка при загрузке примеров: {ex}"))
+            page.snack_bar.open = True
+            page.update()
+
+    def copy_selected_text():
+        # Эта функция будет копировать выделенный текст в Markdown-виджете
+        # Реализация зависит от того, как Flet обрабатывает выделение текста
+        pass
 
     def show_query_view(e=None):
         page.views.clear()
@@ -53,13 +150,20 @@ def main(page: ft.Page):
         doc_page = ft.View(
             "/docs",
             [
-                ft.AppBar(title=ft.Text("Документация"), bgcolor="#550055"),
+                ft.AppBar(
+                    title=ft.Text("Документация"), 
+                    bgcolor="#550055",
+                    leading=ft.IconButton(
+                        icon="arrow_back",
+                        on_click=lambda _: page.go("/"),  # Возврат на главный экран
+                    )
+                ),
                 ft.Container(
                     content=ft.Column([
                         ft.Markdown(
                             readme_text,
                             selectable=True,
-                            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                            extension_set="gitHubWeb",
                             code_theme="atom-one-dark",
                             on_tap_link=lambda e: page.launch_url(e.data),
                             expand=True,
@@ -72,6 +176,7 @@ def main(page: ft.Page):
             ],
             scroll="auto"
         )
+        page.views.clear()
         page.views.append(doc_page)
         page.update()
 
@@ -150,7 +255,7 @@ def main(page: ft.Page):
     # Правая часть (вывод + кнопка копировать)
     output_column = ft.Column(
         [
-            result_output,  # уже expand=True
+            ft.Container(result_output, expand=True),
             ft.Row([
                 ft.OutlinedButton("Скопировать", on_click=copy_output)
             ], alignment=ft.MainAxisAlignment.START)
@@ -158,39 +263,53 @@ def main(page: ft.Page):
         expand=True
     )
 
-    # Основная строка: две колонки
-    body = ft.Row(
-        [
-        ft.Container(input_column, padding=10, expand=1),
-        ft.Container(
-            output_column,
-            padding=10,
-            bgcolor="#330033",
-            border_radius=10,
-            border=ft.border.all(5, "black"),
-            expand=1
-        ),
-        ],
-        expand=True
-    )
-
     query_view = ft.View(
         "/",
-        controls=[body],
-        appbar=ft.AppBar(  # ⬅ вот сюда AppBar
+        appbar = ft.AppBar(
             title=ft.Text("SQL GUI Client", style=ft.TextStyle(size=20, weight=ft.FontWeight.BOLD, color="white")),
             bgcolor="#330033",
             actions=[
                 ft.TextButton(content=ft.Text("Запросчик", weight="bold", color="white"), on_click=show_query_view),
-                ft.TextButton(content=ft.Text("ERD", weight="bold", color="white"), on_click=lambda e: print("ERD")),
-                ft.TextButton(content=ft.Text("Примеры кода", weight="bold", color="white"), on_click=lambda e: print("Примеры")),
+                ft.TextButton(content=ft.Text("ERD", weight="bold", color="white"), on_click=show_erd_view),
+                ft.TextButton(content=ft.Text("Примеры кода", weight="bold", color="white"), on_click=show_examples_view),
                 ft.TextButton(content=ft.Text("Документация", weight="bold", color="white"), on_click=show_doc_view),
             ]
         ),
-        scroll="auto"
+        controls=[
+            ft.Row(
+                [
+                    ft.Container(
+                        input_column,
+                        padding=20,
+                        expand=True,
+                        bgcolor="#220022",
+                        border_radius=10,
+                    ),
+                    ft.Container(
+                        output_column,
+                        padding=20,
+                        expand=True,
+                        bgcolor="#330033",
+                        border_radius=10,
+                    ),
+                ],
+                expand=True,
+                spacing=10,
+            )
+        ],
+        padding=0,
+        spacing=0,
     )
 
-    page.on_route_change = lambda e: None  # нужно, чтобы не ругался на route
+    def route_change(e):
+        if page.route == "/":
+            show_query_view()
+        elif page.route == "/erd":
+            show_erd_view(None)
+        elif page.route == "/docs":
+            show_doc_view(None)
+
+    page.on_route_change = route_change
 
     page.views.append(query_view)
     page.update()
