@@ -3,7 +3,7 @@ import pyperclip  # Для копирования текста
 import psycopg2
 import traceback
 import os
-
+import sys
 
 def main(page: ft.Page):
     page.title = "SQL GUI"
@@ -25,6 +25,16 @@ def main(page: ft.Page):
             toggle_fullscreen()
 
     page.on_keyboard_event = on_keyboard
+
+    def get_resource_path(relative_path):
+        if hasattr(sys, '_MEIPASS'):
+            # Мы в собранном приложении (PyInstaller)
+            base_path = sys._MEIPASS
+        else:
+            # Мы в режиме разработки
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        
+        return os.path.join(base_path, relative_path)
 
     TEXT_STYLE = ft.TextStyle(size=16, weight=ft.FontWeight.BOLD, color="white")
 
@@ -51,7 +61,8 @@ def main(page: ft.Page):
     )
     def create_erd_view():
         try:
-            erd_path = os.path.join(os.path.dirname(__file__), "ERD.png")
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            erd_path = os.path.join(current_dir, 'ERD.png')
             
             if not os.path.exists(erd_path):
                 raise FileNotFoundError(f"Файл ERD.png не найден по пути: {erd_path}")
@@ -170,8 +181,13 @@ def main(page: ft.Page):
 
     def load_readme():
         try:
-            base_dir = os.path.dirname(os.path.abspath(__file__))  # папка, где main.py
-            readme_path = os.path.join(base_dir, "..", "README.md")
+            if hasattr(sys, '_MEIPASS'):
+                # В собранном приложении файл будет в той же папке
+                readme_path = get_resource_path('README.md')
+            else:
+                # В режиме разработки берем из родительской директории
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                readme_path = os.path.join(os.path.dirname(base_dir), 'README.md')
             with open(readme_path, "r", encoding="utf-8") as f:
                 return f.read()
         except Exception as e:
@@ -179,8 +195,7 @@ def main(page: ft.Page):
 
     def load_examples():
         try:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            examples_path = os.path.join(base_dir, "examples.md")
+            examples_path = get_resource_path('examples.md')
             with open(examples_path, "r", encoding="utf-8") as f:
                 return f.read()
         except Exception as e:
@@ -319,8 +334,5 @@ def main(page: ft.Page):
     error_details = traceback.format_exc()
     print(error_details)
     result_text = f"Ошибка при выполнении запроса:\n\n{error_details}"
-
-
-
 
 ft.app(target=main)
