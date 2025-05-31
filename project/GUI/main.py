@@ -1,5 +1,5 @@
 import flet as ft
-import pyperclip  # Для копирования текста
+import pyperclip  
 import psycopg2
 import traceback
 import os
@@ -19,7 +19,6 @@ def main(page: ft.Page):
             page.window.full_screen = True
         page.update()
     
-    # Обработка Esc и двойного клика по интерфейсу
     def on_keyboard(e: ft.KeyboardEvent):
         if e.key == "Escape":
             toggle_fullscreen()
@@ -182,10 +181,8 @@ def main(page: ft.Page):
     def load_readme():
         try:
             if hasattr(sys, '_MEIPASS'):
-                # В собранном приложении файл будет в той же папке
                 readme_path = get_resource_path('README.md')
             else:
-                # В режиме разработки берем из родительской директории
                 base_dir = os.path.dirname(os.path.abspath(__file__))
                 readme_path = os.path.join(os.path.dirname(base_dir), 'README.md')
             with open(readme_path, "r", encoding="utf-8") as f:
@@ -220,13 +217,13 @@ def main(page: ft.Page):
             cur = conn.cursor()
             cur.execute(query)
 
-            if cur.description:  # есть возвращаемые строки (например SELECT)
+            if cur.description:  
                 rows = cur.fetchall()[:500]
                 columns = [desc[0] for desc in cur.description]
                 result_text = "\t".join(columns) + "\n" + "\n".join(["\t".join(map(str, row)) for row in rows])
                 if len(rows) == 500:
                     result_text += "\n...\nОграничено 500 строками."
-            else:  # команда вроде INSERT, UPDATE
+            else:  
                 conn.commit()
                 result_text = f"Команда выполнена успешно: {cur.statusmessage}"
 
@@ -236,7 +233,7 @@ def main(page: ft.Page):
         except Exception as ex:
             import traceback
             error_details = traceback.format_exc()
-            print(error_details)  # лог в консоль
+            print(error_details)  
             result_text = f"Ошибка при выполнении запроса:\n\n{error_details}"
 
 
@@ -296,14 +293,14 @@ def main(page: ft.Page):
                         bgcolor="#220022",
                         border_radius=10,
                     ),
-                   ft.Container(
-                    output_column,
-                    padding=20,
-                    expand=True,
-                    bgcolor="#330033",
-                    border_radius=10,
-                    border=ft.border.all(3, "black"),  
-                )
+                    ft.Container(
+                        output_column,
+                        padding=20,
+                        expand=True,
+                        bgcolor="#330033",
+                        border_radius=10,
+                        border=ft.border.all(3, "black"),  
+                    )
                 ],
                 expand=True,
                 spacing=10,
